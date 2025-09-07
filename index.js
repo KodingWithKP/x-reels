@@ -1,7 +1,3 @@
-// index.js - X-Reels Server (v34 - Robust FFmpeg Input Handling)
-// This file contains the core logic for the application.
-
-// --- 1. Imports and Setup ---
 const express = require('express');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const ElevenLabs = require('elevenlabs-node');
@@ -15,7 +11,6 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use('/outputs', express.static(path.join(__dirname, 'outputs')));
 
-// --- 2. API Client Initialization ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const elevenlabs = new ElevenLabs({
     apiKey: process.env.ELEVENLABS_API_KEY,
@@ -24,8 +19,6 @@ const elevenlabs = new ElevenLabs({
 const FFMPEG_PATH = require('ffmpeg-static');
 ffmpeg.setFfmpegPath(FFMPEG_PATH);
 
-
-// --- 3. Directory and Config Setup ---
 const outputDir = path.join(__dirname, 'outputs');
 const assetsDir = path.join(__dirname, 'assets');
 const templatesDir = path.join(__dirname, 'templates');
@@ -39,8 +32,6 @@ const musicDir = path.join(__dirname, 'assets', 'music');
 const SHOW_CREDITS_IMAGE = process.env.SHOW_CREDITS_IMAGE === 'true';
 const creditsImagePath = path.join(assetsDir, 'credits.png');
 
-
-// --- 4. Helper Functions ---
 function handleGoogleAIError(error, res) {
     console.error("Google AI Error:", error);
     if (error.status === 429) {
@@ -57,8 +48,6 @@ function handleGoogleAIError(error, res) {
 function addPillarboxInstruction(prompt) {
     return `${prompt}. CRITICAL INSTRUCTION: The final image must be a VERTICAL 9:16 composition that fills the FULL HEIGHT of the square output frame. Add black bars ONLY to the left and right (pillarboxing) to fill the width.`;
 }
-
-// --- 5. Core AI & Video Functions ---
 
 async function generateScript(inputText, template) {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -220,7 +209,7 @@ async function assembleVideo(imagePaths, outputPath, options = {}) {
 }
 
 
-// --- 6. API Endpoints ---
+// --- API Endpoints ---
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/reels', (req, res) => res.sendFile(path.join(__dirname, 'public', 'reels.html')));
 
@@ -345,7 +334,7 @@ app.post('/create-video', async (req, res) => {
     } catch (error) { handleGoogleAIError(error, res); }
 });
 
-// --- 7. Start Server ---
+// --- Start Server ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
