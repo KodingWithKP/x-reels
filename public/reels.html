@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>x-Reels | Reels Video Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #f4f7f9;
+            --surface: #ffffff;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --text-primary: #111827;
+            --text-secondary: #374151;
+            --border: #e5e7eb;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            margin: 0;
+            color: var(--text-primary);
+        }
+        .header {
+            background-color: var(--surface);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .logo { font-size: 1.5rem; font-weight: 800; }
+        .nav-link { font-weight: 600; text-decoration: none; color: var(--primary); }
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 2rem; }
+        h1 { margin-top: 0; font-size: 2.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 2.5rem; }
+        #reelsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; }
+        .reel-card { background: var(--surface); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .reel-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        .reel-card video { width: 100%; display: block; background-color: #111827; aspect-ratio: 9/16; }
+        .reel-info { padding: 1rem 1.25rem; }
+        .reel-info .date { font-size: 0.8rem; color: #6b7280; margin-bottom: 0.5rem; }
+        .reel-info .prompt { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; max-height: 65px; overflow-y: auto; }
+        .pagination { display: flex; justify-content: center; align-items: center; margin-top: 3rem; padding-bottom: 2rem; }
+        .pagination button { background-color: var(--surface); color: var(--text-primary); border: 1px solid var(--border); padding: 10px 18px; border-radius: 8px; font-size: 1rem; cursor: pointer; margin: 0 0.5rem; font-weight: 600; }
+        .pagination button:hover:not(:disabled) { border-color: #d1d5db; background-color: #f9fafb; }
+        .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .pagination span { font-weight: 600; color: var(--text-secondary); }
+        #loading-container { text-align: center; padding: 4rem 0; }
+        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: var(--primary); animation: spin 1s ease infinite; margin: 1rem auto; display: block; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">X-Reels</div>
+        <a href="/" class="nav-link">&larr; Back to Editor</a>
+    </header>
+
+    <main class="container">
+        <h1>Trending Reels</h1>
+
+        <div id="reelsGrid"></div>
+        
+        <div id="loading-container">
+            <div class="spinner"></div>
+            <p id="loading-text">Loading reels...</p>
+        </div>
+
+        <div class="pagination" id="paginationControls" style="display: none;">
+            <button id="prevBtn">&larr; Previous</button>
+            <span id="pageInfo"></span>
+            <button id="nextBtn">Next &rarr;</button>
+        </div>
+    </main>
+
+    <script>
+        const reelsGrid = document.getElementById('reelsGrid');
+        const loadingContainer = document.getElementById('loading-container');
+        const loadingText = document.getElementById('loading-text');
+        const paginationControls = document.getElementById('paginationControls');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const pageInfo = document.getElementById('pageInfo');
+
+        let currentPage = 1;
+        let totalPages = 1;
+        const limit = 9;
+
+        async function fetchReels(page) {
+            loadingContainer.style.display = 'block';
+            reelsGrid.innerHTML = '';
+            paginationControls.style.display = 'none';
+
+            try {
+                const response = await fetch(`/reels-list?page=${page}&limit=${limit}`);
+                if (!response.ok) throw new Error('Failed to fetch reels.');
+
+                const data = await response.json();
+                
+                if (data.reels && data.reels.length > 0) {
+                    renderReels(data.reels);
+                    currentPage = data.currentPage;
+                    totalPages = data.totalPages;
+                    updatePagination();
+                    paginationControls.style.display = 'flex';
+                    loadingContainer.style.display = 'none';
+                } else {
+                    loadingText.textContent = 'No reels found. Go create some!';
+                    document.querySelector('.spinner').style.display = 'none';
+                }
+            } catch (error) {
+                console.error("Error fetching reels:", error);
+                loadingText.textContent = 'Could not load reels.';
+                document.querySelector('.spinner').style.display = 'none';
+            }
+        }
+
+        function renderReels(reels) {
+            reels.forEach(reel => {
+                const card = document.createElement('div');
+                card.className = 'reel-card';
+
+                const videoUrl = `/reel/${reel.id}`;
+                const originalText = reel.prompt.originalText || 'No original text saved.';
+                const creationDate = new Date(reel.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric', month: 'long', day: 'numeric'
+                });
+
+                card.innerHTML = `
+                    <video src="${videoUrl}" preload="metadata" muted onmouseover="this.play()" onmouseout="this.pause(); this.currentTime=0;"></video>
+                    <div class="reel-info">
+                        <div class="date">${creationDate}</div>
+                        <p class="prompt"><strong>Prompt:</strong> ${originalText}</p>
+                    </div>
+                `;
+                reelsGrid.appendChild(card);
+            });
+        }
+        
+        function updatePagination() {
+            pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+        }
+
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                fetchReels(currentPage - 1);
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                fetchReels(currentPage + 1);
+            }
+        });
+
+        // Initial load
+        fetchReels(currentPage);
+    </script>
+
+</body>
+</html>
+
