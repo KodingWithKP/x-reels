@@ -1,5 +1,5 @@
 ---------------------------------------------------
-AI NEWSROOM ON DEMAND - API KEYS
+x-Reels Project Setup
 ---------------------------------------------------
 1. Copy this file to a new file named .env
 2. Add your secret API keys below.
