@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>x-Reels | Reels Video Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #f4f7f9;
+            --surface: #ffffff;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary: #6b7280;
+            --secondary-hover: #4b5563;
+            --text-primary: #111827;
+            --text-secondary: #374151;
+            --border: #e5e7eb;
+            --danger: #ef4444;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            margin: 0;
+            color: var(--text-primary);
+        }
+        .header {
+            background-color: var(--surface);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo { font-size: 1.5rem; font-weight: 800; }
+        .nav-link { font-weight: 600; text-decoration: none; color: var(--primary); }
+        .container { max-width: 700px; margin: 2rem auto; padding: 2.5rem; background-color: var(--surface); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        h1 { margin-top: 0; font-size: 2rem; font-weight: 800; text-align: center; }
+        p { color: var(--text-secondary); margin-bottom: 2rem; text-align: center; }
+        textarea, select { width: 100%; padding: 12px; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; box-sizing: border-box; resize: vertical; background-color: #f9fafb; }
+        textarea:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); }
+        button { border: none; padding: 12px 20px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+        button:disabled { background-color: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
+        .main-btn { width: 100%; background-color: var(--primary); color: white; padding: 14px 24px; font-size: 1.1rem; }
+        .main-btn:hover:not(:disabled) { background-color: var(--primary-hover); }
+        #status { font-weight: 500; text-align: center; margin: 1.5rem 0; min-height: 24px; transition: color 0.3s; }
+        video { display: block; width: auto; max-width: 50%; max-height: 70vh; border-radius: 8px; margin: 1rem auto; background-color: #111827; }
+        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 28px; height: 28px; border-radius: 50%; border-left-color: var(--primary); animation: spin 1s ease infinite; margin: 1.5rem auto; display: none; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        #scriptEditor { margin-top: 2.5rem; border-top: 1px solid var(--border); padding-top: 2rem; }
+        .scene { background-color: #f9fafb; border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; position: relative; }
+        .scene.dragging { opacity: 0.5; border-style: dashed; }
+        .scene-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .scene-header h3 { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+        .scene-controls { display: flex; align-items: center; gap: 0.5rem; }
+        .drag-handle { cursor: grab; padding: 0.5rem; color: var(--secondary); }
+        .delete-btn { font-size: 1.2rem; background: none; border: none; color: var(--secondary); padding: 0.5rem; line-height: 1; cursor: pointer; }
+        .delete-btn:hover { color: var(--danger); }
+        .scene label { display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-secondary); }
+        .scene .regenerate-btn { font-size: 0.8rem; padding: 6px 12px; background-color: var(--secondary); color: white; float: right; margin-top: 0.5rem; }
+        .scene .regenerate-btn:hover:not(:disabled) { background-color: var(--secondary-hover); }
+        .toggle-container { display: flex; align-items: center; margin-bottom: 1rem; color: var(--text-secondary); user-select: none; padding: 8px; border-radius: 8px; transition: background-color 0.2s; }
+        .toggle-container:hover { background-color: #f9fafb; }
+        .toggle-container input { margin-right: 0.75rem; width: 1.1em; height: 1.1em; accent-color: var(--primary); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        #addSceneBtn { width: 100%; background-color: transparent; color: var(--primary); border: 2px dashed var(--border); margin-top: 1rem; padding: 14px; }
+        #addSceneBtn:hover { background-color: #f9fafb; border-color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <div class="app-layout">
+        <header class="header">
+            <div class="logo">x-Reels</div>
+            <a href="/reels" class="nav-link">Trending Reels &rarr;</a>
+        </header>
+
+        <main>
+            <div class="container">
+                <h1>Create a new Reel</h1>
+                <p>Start with a single line of text and let AI do the rest.</p>
+                
+                <div id="initialForm">
+                    <textarea id="inputText" rows="4" placeholder="e.g., The future isn't just coming, it's being built on a new framework..." required></textarea>
+                    
+                    <div class="form-grid">
+                        <div>
+                            <label for="templateSelect">Video Style</label>
+                            <select id="templateSelect" required>
+                                <option value="_keep_original_" selected>Keep Original Narration</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="voiceSelect">Voice</label>
+                            <select id="voiceSelect" required>
+                                <option value="none" selected>None - Silent Video</option>
+                                <option value="2EiwWnXFnvU5JabPnv8n">Clyde</option>
+                                <option value="21m00Tcm4TlvDq8ikWAM">Rachel (Professional Female)</option>
+                                <option value="EkK5I93UQWFDigLMpZcX">James (Husky and Engaging)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <label class="toggle-container">
+                        <input type="checkbox" id="overlayTextToggle" checked>
+                        Add important words to images
+                    </label>
+
+                    <button type="button" id="generateScriptBtn" class="main-btn">Generate Script</button>
+                </div>
+
+                <div id="status"></div>
+                <div class="spinner" id="spinner"></div>
+                
+                <div id="scriptEditor" style="display: none;">
+                    <!-- Dynamically populated -->
+                </div>
+                
+                <div id="result">
+                    <video id="videoPlayer" controls style="display: none;"></video>
+                    <div id="share-link-area" style="text-align: center; margin-top: 1rem; display: none;">
+                        <label for="shareLink" style="font-weight: 600; display: block; margin-bottom: 0.5rem;">Shareable Link:</label>
+                        <div style="display: flex; justify-content: center; align-items: center;">
+                            <input type="text" id="shareLink" readonly style="flex-grow: 1; text-align: center; border-right: none; border-top-right-radius: 0; border-bottom-right-radius: 0; background-color: #f9fafb;">
+                            <button id="copyLinkBtn" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">Copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const generateScriptBtn = document.getElementById('generateScriptBtn');
+        const statusDiv = document.getElementById('status');
+        const spinner = document.getElementById('spinner');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const templateSelect = document.getElementById('templateSelect');
+        const scriptEditorDiv = document.getElementById('scriptEditor');
+        const initialFormDiv = document.getElementById('initialForm');
+        const overlayTextToggle = document.getElementById('overlayTextToggle');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const shareLinkArea = document.getElementById('share-link-area');
+        const shareLinkInput = document.getElementById('shareLink');
+        const copyLinkBtn = document.getElementById('copyLinkBtn'); 
+
+        let currentScript = null;
+
+        window.addEventListener('load', loadTemplates);
+        generateScriptBtn.addEventListener('click', handleGenerateScript);
+        copyLinkBtn.addEventListener('click', handleCopyLink); 
+        
+        async function loadTemplates() {
+            try {
+                const response = await fetch('/templates');
+                if (!response.ok) throw new Error('Failed to load templates');
+                const templates = await response.json();
+                templates.forEach(t => templateSelect.add(new Option(t.name, t.id)));
+            } catch (error) {
+                updateStatus('Error: Could not load video templates.', '#ef4444');
+            }
+        }
+
+        async function loadMusic() {
+            try {
+                const musicSelect = document.getElementById('musicSelect');
+                if (!musicSelect) return;
+                const response = await fetch('/music');
+                if (!response.ok) throw new Error('Failed to load music');
+                const musicFiles = await response.json();
+                musicFiles.forEach(file => musicSelect.add(new Option(file, file)));
+            } catch (error) {
+                console.error("Could not load music files:", error);
+            }
+        }
+
+        async function handleFetchError(response) {
+            const errorData = await response.json().catch(() => ({ 
+                error: `Server returned status ${response.status} with no message.` 
+            }));
+            console.error('Server responded with an error:', errorData);
+            throw new Error(errorData.error || 'An unknown server error occurred.');
+        }
+
+        async function handleGenerateScript() {
+            const text = document.getElementById('inputText').value;
+            const templateId = templateSelect.value;
+            const keepNarration = templateId === '_keep_original_';
+            
+            if (!text.trim()) {
+                updateStatus('Please enter text to generate a script.', '#f59e0b');
+                return;
+            }
+             if (!templateId) {
+                updateStatus('Please select a video style.', '#f59e0b');
+                return;
+            }
+
+            updateStatus('Generating script...');
+            setLoading(true);
+            scriptEditorDiv.style.display = 'none';
+            videoPlayer.style.display = 'none';
+            shareLinkArea.style.display = 'none';
+
+            try {
+                const response = await fetch('/generate-script', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, templateId, keepNarration }),
+                });
+                
+                if (!response.ok) await handleFetchError(response);
+
+                currentScript = await response.json();
+                renderScriptEditor(currentScript);
+                scriptEditorDiv.style.display = 'block';
+                updateStatus('Script generated. Review and edit below.', '#10b981');
+
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`, '#ef4444');
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        function renderScriptEditor(script) {
+            scriptEditorDiv.innerHTML = `
+                <div id="scenesContainer"></div>
+                <button type="button" id="addSceneBtn" title="Add New Scene">+ Add Scene</button>
+                <div id="music-selection" style="margin-top: 1rem;">
+                    <label for="musicSelect" style="font-weight: 600;">Background Music</label>
+                    <select id="musicSelect" required><option value="">None</option></select>
+                </div>
+                <button type="button" id="createVideoBtn" class="main-btn" style="margin-top: 1.5rem;">Create Video from Script</button>
+            `;
+            
+            const scenesContainer = document.getElementById('scenesContainer');
+            script.scenes.forEach((scene, index) => {
+                scenesContainer.appendChild(createSceneElement(scene, index));
+            });
+            
+            document.getElementById('addSceneBtn').addEventListener('click', handleAddScene);
+            document.getElementById('createVideoBtn').addEventListener('click', handleCreateVideo);
+            
+            setupDragAndDrop(scenesContainer);
+            loadMusic();
+        }
+
+        function createSceneElement(scene, index) {
+            const sceneEl = document.createElement('div');
+            sceneEl.className = 'scene';
+            sceneEl.setAttribute('draggable', 'true');
+            sceneEl.dataset.index = index;
+
+            // FIXED: Changed data-part for visual prompt to 'visual' to match the textarea id prefix
+            sceneEl.innerHTML = `
+                <div class="scene-header">
+                    <h3>Scene ${index + 1}</h3>
+                    <div class="scene-controls">
+                        <span class="drag-handle" title="Drag to reorder">☰</span>
+                        <button class="delete-btn" title="Delete Scene">×</button>
+                    </div>
+                </div>
+                <label for="narration-${index}">Narration:</label>
+                <textarea id="narration-${index}" rows="2">${scene.narration}</textarea>
+                <button class="regenerate-btn" data-part="narration">Regenerate</button>
+                <label for="visual-${index}" style="margin-top: 1rem;">Visual Prompt:</label>
+                <textarea id="visual-${index}" rows="4">${scene.visual_prompt}</textarea>
+                <button class="regenerate-btn" data-part="visual">Regenerate</button>
+            `;
+            
+            sceneEl.querySelector('.delete-btn').addEventListener('click', () => {
+                sceneEl.remove();
+                updateSceneNumbers();
+            });
+            sceneEl.querySelectorAll('.regenerate-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => handleRegeneratePart(e, sceneEl));
+            });
+            return sceneEl;
+        }
+
+        function handleAddScene() {
+            const scenesContainer = document.getElementById('scenesContainer');
+            const newIndex = scenesContainer.children.length;
+            const newScene = createSceneElement({ narration: '', visual_prompt: '' }, newIndex);
+            scenesContainer.appendChild(newScene);
+            updateSceneNumbers();
+        }
+
+        function updateSceneNumbers() {
+            document.querySelectorAll('#scenesContainer .scene').forEach((scene, index) => {
+                scene.dataset.index = index;
+                scene.querySelector('h3').textContent = `Scene ${index + 1}`;
+                scene.querySelectorAll('label, textarea').forEach(el => {
+                    const id = el.id;
+                    const htmlFor = el.htmlFor;
+                    if (htmlFor) el.htmlFor = htmlFor.replace(/-\d+$/, `-${index}`);
+                    if (id) el.id = id.replace(/-\d+$/, `-${index}`);
+                });
+            });
+        }
+
+        function setupDragAndDrop(container) {
+            let draggingElement = null;
+
+            container.addEventListener('dragstart', e => {
+                if (e.target.classList.contains('scene')) {
+                    draggingElement = e.target;
+                    setTimeout(() => e.target.classList.add('dragging'), 0);
+                }
+            });
+
+            container.addEventListener('dragend', () => {
+                if (draggingElement) {
+                    draggingElement.classList.remove('dragging');
+                    draggingElement = null;
+                    updateSceneNumbers();
+                }
+            });
+
+            container.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(container, e.clientY);
+                if (afterElement == null) {
+                    container.appendChild(draggingElement);
+                } else {
+                    container.insertBefore(draggingElement, afterElement);
+                }
+            });
+        }
+        
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.scene:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+        
+        async function handleRegeneratePart(event, sceneEl) {
+            const btn = event.target;
+            const part = btn.dataset.part;
+            const scriptFromUI = getScriptFromUI();
+            
+            const sceneIndex = parseInt(sceneEl.dataset.index, 10);
+
+            btn.disabled = true;
+            btn.textContent = '...';
+
+            try {
+                const response = await fetch('/regenerate-part', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ script: scriptFromUI, sceneIndex, part }),
+                });
+                
+                if (!response.ok) await handleFetchError(response);
+
+                const { newText } = await response.json();
+                
+                const targetTextarea = sceneEl.querySelector(`textarea[id^='${part}-']`);
+                if (targetTextarea) {
+                    targetTextarea.value = newText;
+                } else {
+                    // This error should no longer happen with the fix.
+                    throw new Error(`Could not find textarea for part: ${part}`);
+                }
+
+            } catch (error) {
+                updateStatus(`Regeneration failed: ${error.message}`, '#ef4444');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Regenerate';
+            }
+        }
+
+        async function handleCreateVideo() {
+            const finalScript = getScriptFromUI();
+            const musicFile = document.getElementById('musicSelect').value;
+            const overlayText = overlayTextToggle.checked;
+            const voiceId = voiceSelect.value;
+            const originalText = document.getElementById('inputText').value;
+            const templateId = document.getElementById('templateSelect').value;
+
+            if (!finalScript) return;
+
+            updateStatus('Creating video... this may take a minute.');
+            setLoading(true);
+            scriptEditorDiv.style.display = 'none';
+            videoPlayer.style.display = 'none';
+            shareLinkArea.style.display = 'none';
+
+            try {
+                const response = await fetch('/create-video', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        script: finalScript, 
+                        musicFile, 
+                        overlayText, 
+                        voiceId, 
+                        originalText,
+                        templateId
+                    }),
+                });
+                
+                if (!response.ok) await handleFetchError(response);
+                
+                const data = await response.json();
+                const folderName = data.videoUrl.split('/')[2];
+                const shareUrl = `${window.location.origin}/reel/${folderName}`;
+
+                updateStatus('Video created successfully!', '#10b981');
+                
+                videoPlayer.src = shareUrl;
+                videoPlayer.style.display = 'block';
+                videoPlayer.load();
+
+                shareLinkInput.value = shareUrl;
+                shareLinkArea.style.display = 'block';
+
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`, '#ef4444');
+            } finally {
+                setLoading(false);
+                initialFormDiv.style.display = 'block';
+            }
+        }
+        
+        function handleCopyLink() {
+            if (!shareLinkInput.value) return;
+            shareLinkInput.select();
+            document.execCommand('copy');
+            updateStatus('Link copied to clipboard!', '#3b82f6');
+            setTimeout(() => {
+                if (statusDiv.textContent === 'Link copied to clipboard!') {
+                    updateStatus('Video created successfully!', '#10b981');
+                }
+            }, 2000);
+        }
+
+        // FIXED: More robust getScriptFromUI function
+        function getScriptFromUI() {
+            const scenes = [];
+            document.querySelectorAll('#scenesContainer .scene').forEach((sceneEl) => {
+                const narrationTextarea = sceneEl.querySelector("textarea[id^='narration-']");
+                const visualTextarea = sceneEl.querySelector("textarea[id^='visual-']");
+                
+                if (narrationTextarea && visualTextarea) {
+                    const narration = narrationTextarea.value;
+                    const visual_prompt = visualTextarea.value;
+                    if (narration.trim() || visual_prompt.trim()) {
+                        scenes.push({ narration, visual_prompt });
+                    }
+                }
+            });
+             if (scenes.length === 0) {
+                updateStatus('Cannot create video from an empty script.', '#f59e0b');
+                return null;
+            }
+            return { scenes };
+        }
+
+        function setLoading(isLoading) {
+            spinner.style.display = isLoading ? 'block' : 'none';
+            generateScriptBtn.disabled = isLoading;
+            const createVideoBtn = document.getElementById('createVideoBtn');
+            if (createVideoBtn) createVideoBtn.disabled = isLoading;
+        }
+
+        function updateStatus(message, color = '#111827') {
+            statusDiv.textContent = message;
+            statusDiv.style.color = color;
+        }
+    </script>
+</body>
+</html>
+
